@@ -107,3 +107,38 @@ export interface RegistroInteraccion {
   exitoso: boolean;
   razonFallo?: string;
 }
+
+// ===== SCHEMA CRM DE LEADS (NUEVO) =====
+export interface Lead {
+  id: string;
+  // DATA PERSONAL
+  nombre: string;
+  telefono: string;
+  edad: number;
+  colonia: string;
+  // ESTADO DEL LEAD
+  status: 'nuevo' | 'filtrado' | 'citado' | 'no_apto';
+  // INFORMACIÓN DE VACANTE
+  vacanteId?: string;
+  vacanteNombre?: string;
+  vacanteSugerida?: string; // Nombre de la vacante sugerida
+  // PAPELERÍA Y TRANSPORTE
+  papeleríaCompleta: boolean;
+  rutaTransporteSabe: boolean; // Conoce su ruta de transporte
+  // SEGUIMIENTO
+  lastContact: number; // timestamp del último contacto
+  proximoContacto?: number; // timestamp del próximo contacto programado
+  notes: string; // Notas del agente / observaciones
+  conversacionHistorico: Array<{
+    autor: 'Bot' | 'Agente';
+    mensaje: string;
+    timestamp: number;
+    tipo: 'Texto' | 'Imagen' | 'Nota';
+  }>;
+  // METADATOS
+  fuenteLead: 'WhatsApp' | 'FacebookAds' | 'Formulario' | 'Manual';
+  candidatoId?: string; // Relación con colección Candidato si existe
+  score?: number; // Puntuación de calidad del lead (0-100)
+  fechaCreacion: number;
+  fechaActualizacion: number;
+}

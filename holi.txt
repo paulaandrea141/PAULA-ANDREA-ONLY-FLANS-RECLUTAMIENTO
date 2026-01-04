@@ -413,7 +413,213 @@ COMPILACIÓN: ✅ Sin errores (npm run build)
 STATUS: Listo para usar
 
 ===============================================
-FIN DEL CHAT LOG
-Última actualización: 4 de enero de 2026 - 10:45 AM
-Próxima actualización: A solicitud del usuario
+FASE 7: CRM DE LEADS AUTOMATIZADO
+4 de enero de 2026 - 11:15 AM
 ===============================================
+
+USER REQUEST: "Configura el sistema para que cada interacción de WhatsApp se guarde 
+en una colección de Firestore llamada 'leads'. Cada documento en 'leads' debe contener:
+1. Status: 'nuevo', 'filtrado', 'citado', 'no_apto'
+2. Data: Nombre, teléfono, edad, colonia y vacante sugerida
+3. Seguimiento: 'last_contact' y 'notes'
+El agente debe actualizar el status a 'citado' automáticamente cuando el candidato 
+confirme que tiene papelería completa y conoce su ruta. No crees una BD simple, 
+crea un CRM de leads automatizado."
+
+IMPLEMENTADO:
+
+1. schema.ts - Interfaz Lead (15 campos)
+   - Status: nuevo | filtrado | citado | no_apto
+   - Data: nombre, telefono, edad, colonia
+   - Vacante: vacanteId, vacanteNombre, vacanteSugerida
+   - Papelería: papeleríaCompleta, rutaTransporteSabe
+   - Seguimiento: lastContact, proximoContacto, notes
+   - Historial: conversacionHistorico[]
+   - Metadatos: fuenteLead, candidatoId, score
+
+2. lead-service.ts (LeadService class - 450 líneas)
+   
+   Métodos CRUD:
+   ✅ crearLead() - Crear nuevo lead
+   ✅ obtenerLead(id) - Obtener por ID
+   ✅ obtenerLeadPorTelefono() - Buscar por teléfono
+   ✅ actualizarStatus() - Cambiar status
+   ✅ marcarComoCitado() - Automático cuando confirma papelería + ruta
+   ✅ marcarComoNoApto(razón) - Rechazar con motivo
+   ✅ agregarNota() - Notas del agente
+   ✅ agregarMensajeAHistorial() - Registrar interacciones
+   ✅ programarProximoContacto() - Agenda contacto futuro
+   ✅ obtenerLeadsPorStatus() - Filtrar por estado
+   ✅ obtenerEstadísticas() - KPIs (total, nuevo, filtrado, citado, no_apto, tasaConversion)
+   ✅ obtenerLeadsParaSeguimiento() - Leads sin contacto en 24h
+
+3. whatsapp-bot-service.ts - Integración con bot
+   
+   Nuevo flujo:
+   - procesarMensajeEntrante() mejorado:
+     • Busca lead existente por teléfono
+     • Si no existe → crear lead automáticamente
+     • Guardar mensaje en historial
+     • Procesar según status del lead
+   
+   - procesarPorStatusDelLead():
+     • Ruta diferente para cada status
+   
+   - procesarLeadNuevo():
+     • Pregunta nombre
+     • Al recibir respuesta → status: 'filtrado'
+   
+   - procesarLeadFiltrado():
+     • Pregunta colonia → edad → papelería
+     • Valida datos
+     • Si todo ok → status: 'citado'
+     • Si falta algo → genera preguntas específicas
+   
+   - procesarLeadCitado():
+     • Envía confirmación de entrevista
+     • Detalles de ubicación, horarios
+     • Marca como confirmado
+
+4. pages/leads.tsx (Dashboard Next.js)
+   
+   Componente LeadsPage:
+   ✅ Tabla en tiempo real con todos los leads
+   ✅ Filtros por status (todos, nuevo, filtrado, citado, no_apto)
+   ✅ Estadísticas con 5 cards (total, nuevo, filtrado, citado, no_apto)
+   ✅ Botón dropdown para cambiar status manualmente
+   ✅ Teléfono con link directo a WhatsApp
+   ✅ Actualización automática cada 5 segundos
+   ✅ Colores diferenciados por status (azul/amarillo/verde/rojo)
+   ✅ Fecha último contacto formateada (es-MX)
+
+5. pages/index.tsx - Actualización dashboard
+   - Agregado link a /leads (card verde emerald)
+   - Ahora 3 secciones: Vacantes | Candidatos | CRM de Leads
+
+6. CRM_LEADS_GUIDE.md (documentación completa)
+   - Descripción del sistema
+   - Estructura de datos Lead
+   - Diagrama de flujos de estado
+   - Ejemplos de transiciones de status
+   - API completa documentada
+   - Integración con bot
+   - Dashboard visual
+   - KPIs y análisis
+   - Próximas mejoras
+
+FLUJOS AUTOMATIZADOS:
+
+```
+WhatsApp → procesarMensajeEntrante()
+  ↓
+[¿Existe lead?]
+  ├─ NO → crearLead (status: 'nuevo')
+  └─ SÍ → obtenerLead
+  ↓
+guardarMensajeEnHistorial()
+  ↓
+procesarPorStatusDelLead()
+  ├─ NUEVO → procesarLeadNuevo()
+  │          ├─ Pedir nombre
+  │          └─ Cambiar a 'filtrado'
+  │
+  ├─ FILTRADO → procesarLeadFiltrado()
+  │             ├─ Pedir colonia
+  │             ├─ Pedir edad
+  │             ├─ Validar requisitos
+  │             ├─ Pedir papelería
+  │             └─ Si todo ok → marcarComoCitado()
+  │
+  ├─ CITADO → procesarLeadCitado()
+  │           └─ Enviar detalles entrevista
+  │
+  └─ NO_APTO → (sin procesamiento)
+```
+
+TRANSICIONES DE STATUS:
+
+nuevo
+  ↓
+filtrado
+  ├─ ✅ (cumple requisitos) → citado
+  └─ ❌ (no cumple) → no_apto
+
+citado
+  ├─ ✅ (asiste entrevista) → Candidato colección
+  └─ ❌ (no asiste) → no_apto
+
+CARACTERÍSTICAS PRINCIPALES:
+
+1️⃣ STATUS AUTOMÁTICO
+- Transición automática según respuestas del candidato
+- marcarComoCitado() se ejecuta cuando:
+  • papeleríaCompleta = true (confirmó documentos)
+  • rutaTransporteSabe = true (sabe su ruta)
+  • Automáticamente agrega nota al historial
+
+2️⃣ HISTORIAL COMPLETO
+- Cada mensaje guardado en conversacionHistorico
+- Notas de agentes
+- Timestamps de toda interacción
+- Auditoría completa
+
+3️⃣ SEGUIMIENTO PROGRAMADO
+- lastContact: cuándo fue el último contacto
+- proximoContacto: para agendar seguimientos
+- obtenerLeadsParaSeguimiento(): leads sin contacto en 24h
+
+4️⃣ DATOS ESTRUCTURADOS
+- Información validada (edad 18-70, teléfono formateado)
+- Score de calidad (para rankear leads)
+- Fuente de lead (WhatsApp, Facebook, Formulario, etc)
+
+5️⃣ ANÁLISIS Y REPORTES
+- estadísticas(): retorna KPIs en tiempo real
+- tasaConversion = % citados / total
+- Meta: > 30%
+
+6️⃣ INTEGRACIÓN CON VACANTES
+- vacanteId: enlaza con colección vacantes
+- vacanteNombre: DAMAR, ILSAN, MAGNEKON, Logística
+- MatchingService puede usar esto
+
+DATOS DE PRUEBA:
+
+Cuando usuario escribe "Hola" por WhatsApp:
+
+ANTES:
+- Mensajes se pierden
+- No hay historial
+- Solo 1 Candidato por teléfono
+
+AHORA:
+- Se crea Lead automáticamente (status: 'nuevo')
+- Historial de conversación guardado
+- Se puede cambiar status manualmente
+- Se pueden agregar notas
+- Se registra cada interacción
+
+COMPILACIÓN: ✅ Sin errores (npm run build)
+
+ARCHIVOS CREADOS/MODIFICADOS:
+
+✅ src/database/schema.ts (agregada interfaz Lead)
+✅ src/services/lead-service.ts (nuevo, 500+ líneas)
+✅ src/bot/whatsapp-bot-service.ts (integración Lead)
+✅ pages/leads.tsx (dashboard nuevo)
+✅ pages/index.tsx (link a /leads)
+✅ CRM_LEADS_GUIDE.md (documentación)
+
+PRÓXIMOS PASOS:
+
+1. Crear campaña en Facebook Ads (conecta con webhook /webhook/facebook)
+2. Push a GitHub
+3. Vercel deploy (frontend)
+4. Railway deploy (backend)
+5. Configurar Firestore rules para leads
+
+COSTO: $0 MXN (Firestore Spark Plan incluye leads)
+
+===============================================
+FIN DEL CHAT LOG
+Última actualización: 4 de enero de 2026 - 11:15 AM
