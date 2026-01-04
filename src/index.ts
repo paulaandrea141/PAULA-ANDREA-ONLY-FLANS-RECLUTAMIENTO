@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import { inicializarBaileys } from './bot/baileys-service';
 import { WebhookWhatsApp } from './bot/webhook-handler';
 
 const app = express();
@@ -36,9 +37,22 @@ app.post('/webhook/whatsapp', async (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📱 Webhook WhatsApp en: http://localhost:${PORT}/webhook/whatsapp`);
-});
+// Inicializar Baileys y servidor
+const iniciar = async () => {
+  try {
+    console.log('🔧 Inicializando Baileys (WhatsApp)...');
+    await inicializarBaileys();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+      console.log(`📱 Webhook WhatsApp en: http://localhost:${PORT}/webhook/whatsapp`);
+    });
+  } catch (error) {
+    console.error('❌ Error al iniciar:', error);
+    process.exit(1);
+  }
+};
+
+iniciar();
+
 
