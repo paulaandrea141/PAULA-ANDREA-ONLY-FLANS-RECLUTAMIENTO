@@ -621,5 +621,189 @@ PRÓXIMOS PASOS:
 COSTO: $0 MXN (Firestore Spark Plan incluye leads)
 
 ===============================================
+FASE 8: VERCEL DEPLOYMENT - FRONTEND
+4 de enero de 2026 - 11:30 AM
+===============================================
+
+USER REQUEST: "en vercel"
+
+IMPLEMENTADO:
+
+1. onlyflans-web commit
+   - Agregados archivos: pages/leads.tsx
+   - Modificados: pages/index.tsx
+   - Commit: e3ee392 "Add leads dashboard and update index"
+
+2. GitHub repo para frontend
+   - URL: https://github.com/paulaandrea141/PAULA-ANDREA-ONLY-FLANS-WEB
+   - Rama: main
+   - Archivos: 13 archivos (next.config.js, package.json, tailwind.config.js, etc)
+
+3. Guías de deployment
+
+   VERCEL_DEPLOY_GUIDE.md (completo):
+   ✅ Opción 1: Deploy Automático (paso a paso)
+   ✅ Paso 1: Crear repo GitHub
+   ✅ Paso 2: Conectar repositorio local
+   ✅ Paso 3: Configurar Vercel
+   ✅ Paso 4: Variables de entorno Firebase
+   ✅ Paso 5: Deploy
+   ✅ Dominio personalizado (opcional)
+   ✅ Firestore Rules
+   ✅ Monitoreo en Vercel
+   ✅ Troubleshooting
+   ✅ Pro Tips
+
+   VERCEL_QUICK_START.txt (resumen rápido):
+   ✅ 4 pasos principales
+   ✅ ~7 minutos tiempo total
+   ✅ Líneas de comando exactas
+   ✅ Dónde obtener credenciales
+
+ARQUITECTURA DEPLOYMENT:
+
+```
+┌─────────────────────────────────────┐
+│  GitHub Repository                  │
+│  PAULA-ANDREA-ONLY-FLANS-WEB        │
+│  (onlyflans-web/)                   │
+└──────────────┬──────────────────────┘
+               │ git push
+               ↓
+┌─────────────────────────────────────┐
+│  Vercel.com                         │
+│  - Auto-deploy on push              │
+│  - Build: npm run build             │
+│  - Output: .next                    │
+│  - Environment: NEXT_PUBLIC_*       │
+└──────────────┬──────────────────────┘
+               │
+               ↓
+┌─────────────────────────────────────┐
+│  Live URL                           │
+│  https://your-url.vercel.app        │
+│  - Dashboard: /                     │
+│  - Vacantes: /vacantes              │
+│  - Candidatos: /candidatos          │
+│  - Leads CRM: /leads                │
+└─────────────────────────────────────┘
+               │
+               ↓
+┌─────────────────────────────────────┐
+│  Firestore Database                 │
+│  (lectura en tiempo real)           │
+│  - vacantes collection              │
+│  - candidatos collection            │
+│  - leads collection                 │
+└─────────────────────────────────────┘
+```
+
+VARIABLES DE ENTORNO REQUERIDAS:
+
+En Vercel Environment Variables:
+
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=only-flans.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=only-flans
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=only-flans.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789...
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc...
+
+(Obtener de: https://console.firebase.google.com → Settings → Tu app)
+
+PASOS PARA DEPLOY:
+
+1️⃣ Crear GitHub repo en https://github.com/new
+   - Nombre: PAULA-ANDREA-ONLY-FLANS-WEB
+   - Público/Privado: Tu preferencia
+   - Crear
+
+2️⃣ Push del código local:
+   ```bash
+   cd C:\Users\choco\Desktop\onlyflans-web
+   git remote set-url origin https://github.com/paulaandrea141/PAULA-ANDREA-ONLY-FLANS-WEB.git
+   git push -u origin main
+   ```
+
+3️⃣ En Vercel (https://vercel.com):
+   - Login con GitHub
+   - "New Project"
+   - Seleccionar repo: PAULA-ANDREA-ONLY-FLANS-WEB
+   - Framework: Next.js ✅
+   - Build Command: npm run build ✅
+   - Output: .next ✅
+   - Agregar variables de entorno (paso 1️⃣)
+   - Deploy
+
+4️⃣ Esperar 3-5 minutos
+   - Vercel building...
+   - Deployment successful
+   - URL: https://only-flans-web-...vercel.app
+
+AUTO-DEPLOY (opcional):
+
+Para que cada push a main = auto-deploy:
+
+1. GitHub Settings → Secrets and variables → Actions
+2. New secret: VERCEL_TOKEN
+   - Obtener de: https://vercel.com/account/tokens
+3. Archivo .github/workflows/deploy.yml ya existe
+4. A partir de ahora, cada push triggerea deploy automático
+
+CARACTERÍSTICAS DASHBOARD EN VERCEL:
+
+✅ Real-time Firestore sync
+✅ Responsive design (mobile, tablet, desktop)
+✅ 3 secciones principales:
+   - Vacantes (CRUD)
+   - Candidatos (lista con etapa)
+   - Leads CRM (tabla con status)
+✅ Filtros dinámicos
+✅ Links a WhatsApp directo
+✅ Estadísticas en tiempo real
+✅ Dark theme (Tailwind)
+
+COMPILACIÓN LOCAL:
+
+```bash
+cd onlyflans-web
+npm run build
+# → .next/ directory created
+# → Ready for Vercel
+```
+
+STATUS DESPUÉS DE VERCEL DEPLOY:
+
+✅ Dashboard accesible globalmente en URL pública
+✅ No requiere servidor propio
+✅ Auto-scaling según tráfico
+✅ SSL/HTTPS automático
+✅ CDN global de Vercel
+✅ Previews automáticos en PRs
+✅ Logs en tiempo real
+✅ Rollback con 1 click
+
+TIEMPO ESTIMADO:
+
+- GitHub setup: 2 min
+- Code push: 1 min
+- Vercel config: 3 min
+- Deploy build: 5 min
+- Total: ~11 minutos
+
+DESPUÉS DEL DEPLOY:
+
+Siguiente paso: Backend deployment en Railway o Google Cloud Run
+
+Backend necesita:
+✅ Node.js + Express
+✅ Firestore credentials (.env)
+✅ Baileys WhatsApp setup
+✅ Facebook webhook endpoints
+✅ Puertos: 3000 (o puerto env)
+
+===============================================
 FIN DEL CHAT LOG
-Última actualización: 4 de enero de 2026 - 11:15 AM
+Última actualización: 4 de enero de 2026 - 11:30 AM
+Próxima actualización: A solicitud del usuario
+===============================================
