@@ -1,0 +1,39 @@
+// Reglas de Firestore para Only Flans (Firebase Spark Plan)
+// Copiar en Firebase Console > Firestore > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Colección: vacantes
+    match /vacantes/{vacanteId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.customClaims.admin == true;
+    }
+    
+    // Colección: candidatos
+    match /candidatos/{candidatoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.customClaims.admin == true;
+      allow create: if true; // Para creación automática por bot
+    }
+    
+    // Colección: rutasLogistica
+    match /rutasLogistica/{rutaId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.customClaims.admin == true;
+    }
+    
+    // Colección: configuracionBot
+    match /configuracionBot/{configId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.customClaims.admin == true;
+    }
+    
+    // Colección: registrosInteraccion
+    match /registrosInteraccion/{registroId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null || true; // Bot puede escribir sin auth
+    }
+  }
+}
