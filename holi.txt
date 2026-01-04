@@ -343,7 +343,77 @@ NOTAS IMPORTANTES
 - Código limpio, bien documentado y mantenible
 
 ===============================================
+FASE 6.5: INTEGRACIÓN FACEBOOK ADS
+4 de enero de 2026 - 10:45 AM
+===============================================
+
+USER REQUEST: "facebook ads"
+
+IMPLEMENTADO:
+
+1. facebook-leads-service.ts (141 líneas)
+   - Procesa leads de Facebook Ads automáticamente
+   - Valida webhook de Facebook (GET /webhook/facebook)
+   - Extrae datos: nombre, teléfono, email
+   - Deduplicación de candidatos
+   - Crear candidatos en Firestore desde leads
+   - Reporting de conversiones a Facebook Pixel
+   - Contacto automático por WhatsApp
+
+2. facebook-webhook-handler.ts (68 líneas)
+   - Handler para webhook de Facebook
+   - Integración con Express (/webhook/facebook)
+   - Documentación de integración
+
+3. Actualización src/index.ts
+   - Agregadas rutas GET y POST para /webhook/facebook
+   - Importación de FacebookWebhookHandler
+   - Validación de webhook inicial
+   - Procesamiento de leads entrantes
+
+4. FACEBOOK_ADS_GUIDE.md (documentación completa)
+   - Guía de setup paso a paso
+   - Configuración de credenciales Facebook
+   - Setup de Lead Form en Ads Manager
+   - Configuración de Conversions API
+   - Flujo automático diagrama
+   - Endpoints API documentados
+   - Ejemplos de campaña de prueba
+   - Troubleshooting común
+   - Tips avanzados (A/B testing, audiencias personalizadas)
+
+FLUJO IMPLEMENTADO:
+
+Facebook Ads → Lead Form → Webhook → FacebookLeadsService 
+→ Crear candidato en Firestore → Reportar a Facebook Pixel 
+→ Contactar por WhatsApp automáticamente
+
+CARACTERÍSTICAS:
+
+✅ 100% GRATUITO (Facebook Lead Forms son gratis)
+✅ Deduplicación automática (no duplica leads)
+✅ Validación de webhook con token secreto
+✅ Normalización de teléfonos mexicanos
+✅ Integración directa con Baileys WhatsApp
+✅ Reporta conversiones para optimización de ads
+✅ Etapa automática: "Prospecto"
+
+COSTO TOTAL INTEGRACIÓN: $0 MXN
+(El presupuesto de ads es optional y lo decides tú)
+
+PRÓXIMOS PASOS OPCIONALES:
+
+1. Crear campaña de prueba en Facebook Ads ($100 MXN)
+2. Monitorear en dashboard /candidatos
+3. Ajustar textos de anuncios según resultados
+4. Implementar A/B testing de ads
+5. Crear audiencias personalizadas por rubro (logística, industrial, etc)
+
+COMPILACIÓN: ✅ Sin errores (npm run build)
+STATUS: Listo para usar
+
+===============================================
 FIN DEL CHAT LOG
-Última actualización: 4 de enero de 2026
+Última actualización: 4 de enero de 2026 - 10:45 AM
 Próxima actualización: A solicitud del usuario
 ===============================================

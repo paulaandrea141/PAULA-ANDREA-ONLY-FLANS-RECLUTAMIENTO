@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import { inicializarBaileys } from './bot/baileys-service';
 import { WebhookWhatsApp } from './bot/webhook-handler';
+import { FacebookWebhookHandler } from './bot/facebook-webhook-handler';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +35,31 @@ app.post('/webhook/whatsapp', async (req, res) => {
   } catch (error) {
     console.error('Error en webhook:', error);
     res.status(500).json({ error: 'Error procesando mensaje' });
+  }
+});
+
+// Webhook Facebook Ads - GET (validación)
+app.get('/webhook/facebook', (req, res) => {
+  const verifyToken = req.query.hub_verify_token as string;
+  const mode = req.query.hub_mode as string;
+  const challenge = req.query.hub_challenge as string;
+
+  const result = FacebookWebhookHandler.validarWebhook(verifyToken, mode, challenge);
+  if (result) {
+    res.status(200).send(result);
+  } else {
+    res.status(403).send('Forbidden');
+  }
+});
+
+// Webhook Facebook Ads - POST (recibir leads)
+app.post('/webhook/facebook', async (req, res) => {
+  try {
+    await FacebookWebhookHandler.procesarWebhookFacebook(req.body);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error en webhook de Facebook:', error);
+    res.status(500).json({ error: 'Error procesando lead' });
   }
 });
 
