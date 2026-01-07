@@ -3,6 +3,7 @@ import { CandidatoService } from '../services/candidato-service';
 import { VacanteService } from '../services/vacante-service';
 import { LeadService } from '../services/lead-service';
 import { MatchingService } from '../matching/matching-engine';
+import { generateAIResponse, getConversationHistory } from '../services/ai-service';
 import { Candidato, Lead } from '../database/schema';
 
 export interface MensajeWhatsApp {
@@ -13,15 +14,22 @@ export interface MensajeWhatsApp {
 }
 
 class BotWhatsAppServiceClass {
-  async procesarMensajeEntrante(telefono: string, mensaje: string): Promise<void> {
+  async procesarMensajeEntrante(telefono: string, mensaje: string): Promise<string> {
     try {
-      // Primero verificar si existe un lead
+      // NUEVO: Usar IA para responder de forma natural
+      const conversationHistory = await getConversationHistory(telefono);
+      const { response, extractedData } = await generateAIResponse(
+        mensaje,
+        telefono,
+        conversationHistory
+      );
+
+      // Actualizar lead con datos extraídos
       let lead = await LeadService.obtenerLeadPorTelefono(telefono);
 
-      // Si no existe lead, crear uno nuevo
       if (!lead) {
         const leadId = await LeadService.crearLead({
-          nombre: 'Desconocido', // Se actualizará cuando lo diga
+          nombre: extractedData.nombre || 'Desconocido',
           telefono,
           edad: 0,
           colonia: '',
@@ -29,11 +37,17 @@ class BotWhatsAppServiceClass {
           papeleríaCompleta: false,
           rutaTransporteSabe: false,
           lastContact: Date.now(),
-          notes: `Lead iniciado desde WhatsApp`,
+          notes: `Lead iniciado desde WhatsApp. Experiencia: ${extractedData.experiencia}`,
           conversacionHistorico: [
             {
               autor: 'Bot',
-              mensaje: '👋 Bienvenido. ¿Cuál es tu nombre?',
+              mensaje,
+              timestamp: Date.now(),
+              tipo: 'Texto',
+            },
+            {
+              autor: 'Bot',
+              mensaje: response,
               timestamp: Date.now(),
               tipo: 'Texto',
             },
@@ -41,25 +55,17 @@ class BotWhatsAppServiceClass {
           fuenteLead: 'WhatsApp',
         });
         lead = await LeadService.obtenerLead(leadId);
-      }
-
-      // Agregar mensaje del candidato al historial
-      if (lead) {
-        await LeadService.agregarMensajeAHistorial(lead.id, mensaje, 'Bot', 'Texto');
-
-        // Procesar según el status del lead
-        await this.procesarPorStatusDelLead(lead, mensaje);
-      }
-
-      // También mantener sincronización con Candidato si existe
-      let candidato = await CandidatoService.obtenerCandidatosPorTelefono(telefono);
-      if (!candidato) {
-        await this.flujoAtraccionInicial(telefono);
       } else {
-        await this.continuarFlujoSegunEtapa(candidato, mensaje);
+        // Actualizar nombre si se extrajo
+        if (extractedData.nombre && extractedData.nombre !== 'Desconocido') {
+          // Aquí iría la actualización del lead
+        }
       }
+
+      return response;
     } catch (error) {
       console.error(`Error procesando mensaje:`, error);
+      return 'Disculpa, tengo un problema técnico. Por favor, intenta más tarde.';
     }
   }
 

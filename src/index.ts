@@ -3,12 +3,16 @@ import express from 'express';
 import { inicializarBaileys } from './bot/baileys-service';
 import { WebhookWhatsApp } from './bot/webhook-handler';
 import { FacebookWebhookHandler } from './bot/facebook-webhook-handler';
+import { vacantesRouter } from './routes/vacantes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+
+// API Routes
+app.use('/api/vacantes', vacantesRouter);
 
 // Health check
 app.get('/health', (req, res) => {
