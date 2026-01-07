@@ -54,9 +54,7 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 
-# Silenciador de Baileys
-lid-mapping.json
+# Baileys - Sesión de WhatsApp (CONFIDENCIAL)
 auth_info_baileys/
-# Silenciador de Baileys
 lid-mapping.json
-auth_info_baileys/
+
