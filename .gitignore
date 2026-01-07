@@ -53,3 +53,7 @@ Thumbs.db
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Silenciador de Baileys
+lid-mapping.json
+auth_info_baileys/
