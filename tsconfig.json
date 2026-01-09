@@ -13,7 +13,13 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./.",
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "paths": {
+      "@backend/*": ["./src/*"],
+      "@types/*": ["./src/database/*"],
+      "@services/*": ["./src/services/*"],
+      "@shared/*": ["./src/database/*"]
+    }
   },
   "include": ["src/**/*", "config/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -6,6 +6,9 @@ import { FacebookWebhookHandler } from './bot/facebook-webhook-handler';
 import { vacantesRouter } from './routes/vacantes';
 import { db } from './lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { ExportacionService } from './services/exportacion-service';
+import { SeguimientoContratacionService } from './services/seguimiento-contratacion';
+import { IngestaVacantesService } from './services/ingesta-vacantes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -95,6 +98,111 @@ app.post('/webhook/facebook', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error en webhook Facebook:', error);
     res.status(500).json({ error: 'Error procesando lead' });
+  }
+});
+
+// ✅ NUEVO: Endpoint para exportar contratados en Excel
+app.get('/api/contratados/export/excel', async (req: Request, res: Response) => {
+  try {
+    console.log('📊 Generando Excel de contratados...');
+    const filePath = await ExportacionService.generarExcelContratados();
+    res.download(filePath, 'contratados_TYRELL.xlsx');
+  } catch (error) {
+    console.error('❌ Error generando Excel:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error generando archivo Excel' 
+    });
+  }
+});
+
+// ✅ NUEVO: Endpoint para exportar contratados en JSON
+app.get('/api/contratados/export/json', async (req: Request, res: Response) => {
+  try {
+    console.log('📊 Generando JSON de contratados...');
+    const filePath = await ExportacionService.generarJSONContratados();
+    res.download(filePath, 'contratados_TYRELL.json');
+  } catch (error) {
+    console.error('❌ Error generando JSON:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error generando archivo JSON' 
+    });
+  }
+});
+
+// ✅ NUEVO: Endpoint para obtener lista de contratados
+app.get('/api/contratados', async (req: Request, res: Response) => {
+  try {
+    const contratados = await SeguimientoContratacionService.obtenerContratados();
+    const stats = await SeguimientoContratacionService.obtenerEstadisticas();
+    
+    res.json({
+      success: true,
+      data: {
+        contratados,
+        estadisticas: stats,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo contratados:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error obteniendo datos' 
+    });
+  }
+});
+
+// ✅ NUEVO: Endpoint para generar reporte HTML
+app.get('/api/contratados/export/html', async (req: Request, res: Response) => {
+  try {
+    console.log('📊 Generando reporte HTML...');
+    const filePath = await ExportacionService.generarReporteHTML();
+    res.download(filePath, 'reporte_TYRELL.html');
+  } catch (error) {
+    console.error('❌ Error generando HTML:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error generando reporte HTML' 
+    });
+  }
+});
+
+// 🧠 INGESTA INTELIGENTE: Analizar texto caótico y extraer vacante
+app.post('/api/vacantes/extract', async (req: Request, res: Response) => {
+  try {
+    const { texto } = req.body;
+
+    if (!texto || typeof texto !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere campo "texto" con el mensaje del jefecito'
+      });
+    }
+
+    console.log('🔍 INGESTA: Recibiendo texto para análisis...', texto.slice(0, 50));
+
+    const resultado = await IngestaVacantesService.procesarIngestaCompleta(texto);
+
+    if (!resultado.exito) {
+      return res.status(400).json({
+        success: false,
+        error: resultado.error
+      });
+    }
+
+    res.json({
+      success: true,
+      mensaje: 'Vacante extraída y guardada correctamente',
+      vacanteId: resultado.vacanteId,
+      datos: resultado.datos
+    });
+  } catch (error) {
+    console.error('❌ INGESTA: Error en endpoint:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno al procesar la ingesta'
+    });
   }
 });
 

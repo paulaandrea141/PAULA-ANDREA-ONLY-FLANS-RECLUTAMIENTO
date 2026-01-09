@@ -33,6 +33,9 @@ export const inicializarBaileys = async () => {
     if (connection === 'open') {
       isConnected = true;
       console.log('✅ WhatsApp conectado exitosamente!');
+      
+      // Inicializar bot con publicador automático
+      await BotWhatsAppService.inicializar(sock);
     }
 
     if (connection === 'close') {

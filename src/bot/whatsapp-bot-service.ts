@@ -5,6 +5,10 @@ import { LeadService } from '../services/lead-service';
 import { MatchingService } from '../matching/matching-engine';
 import { generateAIResponse, getConversationHistory } from '../services/ai-service';
 import { Candidato, Lead } from '../database/schema';
+import { PublicadorGruposService } from './publicador-grupos';
+import { Auditoria } from '../utils/auditoria';
+import { SeguimientoContratacionService } from '../services/seguimiento-contratacion';
+import { WASocket } from '@whiskeysockets/baileys';
 
 export interface MensajeWhatsApp {
   telefono: string;
@@ -14,9 +18,78 @@ export interface MensajeWhatsApp {
 }
 
 class BotWhatsAppServiceClass {
+  private socket: WASocket | null = null;
+  private publicadorGrupos: PublicadorGruposService | null = null;
+
+  /**
+   * 🚀 Inicializa el bot con WhatsApp socket
+   */
+  async inicializar(socket: WASocket): Promise<void> {
+    this.socket = socket;
+    
+    // Iniciar sistema de auditoría
+    Auditoria.iniciar();
+    Auditoria.registrar('SISTEMA', '🚀 Bot WhatsApp inicializado');
+    
+    // Iniciar publicador automático de grupos
+    this.publicadorGrupos = new PublicadorGruposService(socket);
+    this.publicadorGrupos.iniciarPublicacionAutomatica();
+    
+    Auditoria.registrar('WHATSAPP', '✅ Publicador automático activado');
+    
+    console.log('✅ Bot WhatsApp Service COMPLETO inicializado');
+  }
+
+  /**
+   * 🛑 Detiene todos los servicios
+   */
+  async detener(): Promise<void> {
+    if (this.publicadorGrupos) {
+      this.publicadorGrupos.detener();
+    }
+    await Auditoria.detener();
+    console.log('🛑 Bot WhatsApp Service detenido');
+  }
+
   async procesarMensajeEntrante(telefono: string, mensaje: string): Promise<string> {
     try {
-      // NUEVO: Usar IA para responder de forma natural
+      // Log de mensaje entrante
+      Auditoria.registrar('WHATSAPP', `📩 Mensaje de ${telefono}`, { mensaje: mensaje.substring(0, 100) });
+
+      // ✅ NUEVO: Detectar confirmación de contratación PRIMERO
+      if (SeguimientoContratacionService.detectarConfirmacion(mensaje)) {
+        const lead = await LeadService.obtenerLeadPorTelefono(telefono);
+        
+        if (lead) {
+          console.log(`🎯 Detectada confirmación de contratación de: ${lead.nombre}`);
+          
+          const datos = await SeguimientoContratacionService.marcarComoContratado(
+            lead.id,
+            mensaje
+          );
+
+          if (datos) {
+            const respuesta = SeguimientoContratacionService.generarMensajeFelicitacion(
+              datos.nombre,
+              datos.empresa
+            );
+
+            await this.enviarMensajeConPausa(telefono, respuesta);
+
+            // Log especial para contrataciones
+            Auditoria.registrar(
+              'CANDIDATO',
+              `🎉 CONTRATADO: ${datos.nombre} en ${datos.empresa}`,
+              datos
+            );
+
+            console.log(`✅ Candidato ${datos.nombre} marcado como CONTRATADO en ${datos.empresa}`);
+            return respuesta;
+          }
+        }
+      }
+
+      // Flujo normal si no es confirmación de contratación
       const conversationHistory = await getConversationHistory(telefono);
       const { response, extractedData } = await generateAIResponse(
         mensaje,
@@ -52,13 +125,20 @@ class BotWhatsAppServiceClass {
               tipo: 'Texto',
             },
           ],
+        
+        // Log de nuevo candidato
+        Auditoria.registrar('CANDIDATO', `👤 Nuevo lead creado: ${extractedData.nombre || 'Desconocido'}`, { telefono });
           fuenteLead: 'WhatsApp',
         });
         lead = await LeadService.obtenerLead(leadId);
       } else {
-        // Actualizar nombre si se extrajo
-        if (extractedData.nombre && extractedData.nombre !== 'Desconocido') {
-          // Aquí iría la actualización del lead
+      // Log de respuesta enviada
+      Auditoria.registrar('WHATSAPP', `📤 Respuesta enviada a ${telefono}`, { response: response.substring(0, 100) });
+
+      return response;
+    } catch (error) {
+      console.error(`Error procesando mensaje:`, error);
+      Auditoria.registrar('ERROR', `❌ Error procesando mensaje de ${telefono}`, { error: String(error) }
         }
       }
 
