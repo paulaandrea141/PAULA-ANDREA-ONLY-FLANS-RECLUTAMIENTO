@@ -125,26 +125,25 @@ class BotWhatsAppServiceClass {
               tipo: 'Texto',
             },
           ],
+          fuenteLead: 'WhatsApp',
+        });
         
         // Log de nuevo candidato
         Auditoria.registrar('CANDIDATO', `👤 Nuevo lead creado: ${extractedData.nombre || 'Desconocido'}`, { telefono });
-          fuenteLead: 'WhatsApp',
-        });
+        
         lead = await LeadService.obtenerLead(leadId);
-      } else {
+      }
+
+      // Enviar respuesta
+      await this.enviarMensajeConPausa(telefono, response);
+
       // Log de respuesta enviada
       Auditoria.registrar('WHATSAPP', `📤 Respuesta enviada a ${telefono}`, { response: response.substring(0, 100) });
 
       return response;
     } catch (error) {
       console.error(`Error procesando mensaje:`, error);
-      Auditoria.registrar('ERROR', `❌ Error procesando mensaje de ${telefono}`, { error: String(error) }
-        }
-      }
-
-      return response;
-    } catch (error) {
-      console.error(`Error procesando mensaje:`, error);
+      Auditoria.registrar('ERROR', `❌ Error procesando mensaje de ${telefono}`, { error: String(error) });
       return 'Disculpa, tengo un problema técnico. Por favor, intenta más tarde.';
     }
   }

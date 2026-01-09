@@ -1,5 +1,5 @@
 import { WASocket } from '@whiskeysockets/baileys';
-import { GRUPOS_MONTERREY_EMPLEO, PLANTILLAS_PUBLICACION } from '../data/grupos-monterrey';
+import { GRUPOS_MONTERREY, PLANTILLAS_PUBLICACION } from '../data/grupos-monterrey';
 import { db } from '../database/firebase-config';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
@@ -75,8 +75,8 @@ export class PublicadorGruposService {
 
     try {
       // Filtrar grupos activos que no se han usado hoy
-      const gruposDisponibles = GRUPOS_MONTERREY_EMPLEO.filter(
-        g => g.activo && !this.gruposPublicadosHoy.has(g.id)
+      const gruposDisponibles = GRUPOS_MONTERREY.filter(
+        g => g.activo && !this.gruposPublicadosHoy.has(g.nombre)
       );
 
       if (gruposDisponibles.length === 0) {
@@ -115,7 +115,7 @@ export class PublicadorGruposService {
       });
 
       console.log(`✅ PUBLICADO EXITOSAMENTE en: ${grupoAleatorio.nombre}`);
-      console.log(`📊 Grupos usados hoy: ${this.gruposPublicadosHoy.size}/${GRUPOS_MONTERREY_EMPLEO.length}`);
+      console.log(`📊 Grupos usados hoy: ${this.gruposPublicadosHoy.size}/${GRUPOS_MONTERREY.length}`);
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
@@ -173,7 +173,7 @@ export class PublicadorGruposService {
       throw new Error('Socket no disponible');
     }
 
-    const gruposActivos = GRUPOS_MONTERREY_EMPLEO.filter(g => g.activo).slice(0, maxGrupos);
+    const gruposActivos = GRUPOS_MONTERREY.filter(g => g.activo).slice(0, maxGrupos);
     console.log(`📢 Publicación MASIVA en ${gruposActivos.length} grupos...`);
 
     for (const grupo of gruposActivos) {
@@ -260,8 +260,8 @@ export class PublicadorGruposService {
     return {
       activo: this.activo,
       gruposUsadosHoy: this.gruposPublicadosHoy.size,
-      gruposTotales: GRUPOS_MONTERREY_EMPLEO.length,
-      gruposDisponibles: GRUPOS_MONTERREY_EMPLEO.filter(
+      gruposTotales: GRUPOS_MONTERREY.length,
+      gruposDisponibles: GRUPOS_MONTERREY.filter(
         g => g.activo && !this.gruposPublicadosHoy.has(g.id)
       ).length
     };

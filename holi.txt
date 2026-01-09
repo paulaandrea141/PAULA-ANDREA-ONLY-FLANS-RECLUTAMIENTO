@@ -1780,3 +1780,34 @@ Interface MensajeHistorial:
 COSTO TOTAL: $0 (Firebase Spark Tier)
 
 ESTADO SESIÃ“N 4: âœ… BOB CHAT 100% INTEGRADO
+
+
+
+
+[DEPLOYMENT RAMA-2] 2026-01-09 06:30:00
+
+ PROTOCOLO BUNKER BETA EJECUTADO
+
+CEO: Paula Specter ordenó deployment rama-2 
+COO: Litt supervisó git workflow 
+Becarios: Claude + Copilot ejecutaron 
+
+COMMIT: fad005a
+URL: https://github.com/paulaandrea141/CORP_TYRELL/tree/rama-2
+
+ARCHIVOS EN RAMA-2:
+ onlyflans-web/pages/index.tsx (Aspiradora 3000 completa)
+ OnlyFlans/src/services/extraccion-grupos.ts (320 líneas)
+ OnlyFlans/src/index.ts (+ 3 endpoints)
+ OnlyFlans/src/database/schema.ts (+ empresa + Contratado)
+
+FUNCIONALIDADES:
+ Botón SUCCIONAR GRUPO JEFECITO 
+ Barra de progreso fucsia neón (0-300)
+ Procesamiento Groq IA (Llama 3.3 70B)
+ Sincronización Firebase automática
+ Botón PUBLICAR EN FACEBOOK 
+
+ESTADO:  RAMA-2 DESPLEGADA - LISTA PARA TESTING
+
+

@@ -47,8 +47,9 @@ export interface Candidato {
     tatuajesVisibles: boolean;
     tatuajesCaraOCuello: boolean;
   };
-  etapa: 'Prospecto' | 'Calificado' | 'Asignado' | 'Inductado' | 'Rechazado';
+  etapa: 'Prospecto' | 'Calificado' | 'Asignado' | 'Inductado' | 'Contratado' | 'Rechazado';
   vacanteAsignada?: string; // ID de la vacante
+  empresa?: string; // Empresa a la que está asignado
   enlace?: {
     messageId: string;
     timestamp: number;

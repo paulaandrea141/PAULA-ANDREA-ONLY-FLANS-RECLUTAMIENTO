@@ -15,10 +15,16 @@ import { IngestaVacantesService } from './services/ingesta-vacantes';
 import { VisionOCRService } from './services/vision-ocr-service';
 import { ContextoSesion } from './services/contexto-sesion';
 import { HistorialIngestaService } from './services/historial-ingesta-service';
+import { ExtraccionGruposService } from './services/extraccion-grupos';
+import { getSocket } from './bot/baileys-service';
+import { AspiradoraStreamingService } from './services/aspiradora-streaming';
 import Groq from 'groq-sdk';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Instancia global del servicio de streaming
+const aspiradoraStreaming = new AspiradoraStreamingService();
 
 // Configurar multer para subida de imágenes
 const upload = multer({
@@ -50,7 +56,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Permitir requests sin origin (Postman, mobile apps, etc.)
     if (!origin) return callback(null, true);
     
@@ -168,6 +174,69 @@ app.get('/api/contratados/export/excel', async (req: Request, res: Response) => 
     });
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌪️ ASPIRADORA 3000 - STREAMING EN TIEMPO REAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Endpoint SSE (Server-Sent Events) para streaming de mensajes en tiempo real
+ * Paula ve CADA mensaje de "jefecito" en la barra lateral
+ */
+app.get('/api/aspiradora/stream', (req: Request, res: Response) => {
+  console.log('🌪️ Nuevo cliente SSE conectado');
+  
+  const clienteId = aspiradoraStreaming.registrarCliente(res);
+  
+  // El cliente se desconectará automáticamente cuando cierre la conexión
+  req.on('close', () => {
+    console.log(`👋 Cliente SSE desconectado: ${clienteId}`);
+  });
+});
+
+/**
+ * Endpoint para obtener estadísticas de la Aspiradora 3000
+ */
+app.get('/api/aspiradora/stats', (req: Request, res: Response) => {
+  try {
+    const stats = aspiradoraStreaming.obtenerEstadisticas();
+    res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ success: false, error: 'Error obteniendo estadísticas' });
+  }
+});
+
+/**
+ * Endpoint para iniciar/detener el monitoreo
+ */
+app.post('/api/aspiradora/toggle', async (req: Request, res: Response) => {
+  try {
+    const sock = getSocket();
+    if (!sock) {
+      return res.status(503).json({
+        success: false,
+        error: 'WhatsApp no conectado',
+      });
+    }
+
+    await aspiradoraStreaming.iniciarMonitoreo(sock);
+
+    res.json({
+      success: true,
+      mensaje: '🌪️ Aspiradora 3000 activada - Monitoreando grupo jefecito 24/7',
+      stats: aspiradoraStreaming.obtenerEstadisticas(),
+    });
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ success: false, error: 'Error iniciando monitoreo' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 
 // ✅ NUEVO: Endpoint para exportar contratados en JSON
 app.get('/api/contratados/export/json', async (req: Request, res: Response) => {
@@ -447,17 +516,118 @@ app.use((err: any, req: Request, res: Response) => {
   });
 });
 
+// 🎯 ENDPOINT: Succionar grupo del jefecito
+app.post('/api/grupos/succionar', async (req: Request, res: Response) => {
+  try {
+    const { grupoId } = req.body;
+
+    if (!grupoId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere campo "grupoId"',
+      });
+    }
+
+    console.log('🔥 API: Iniciando succión del grupo:', grupoId);
+
+    const socket = getSocket();
+    if (!socket) {
+      return res.status(500).json({
+        success: false,
+        error: 'WhatsApp no está conectado. Escanea el QR primero.',
+      });
+    }
+
+    const extractor = new ExtraccionGruposService(socket);
+    const resultado = await extractor.succionarGrupoCompleto(grupoId);
+
+    if (!resultado.exito) {
+      return res.status(400).json({ success: false, error: resultado.error });
+    }
+
+    res.json({
+      success: true,
+      mensaje: 'Grupo succionado exitosamente',
+      data: {
+        totalMensajes: resultado.totalMensajes,
+        vacantesDetectadas: resultado.vacantesDetectadas,
+        nuevas: resultado.nuevas,
+        actualizadas: resultado.actualizadas,
+        resumen: resultado.resumen,
+        contexto: resultado.contexto,
+      },
+    });
+  } catch (error) {
+    console.error('❌ API: Error en succión de grupo:', error);
+    res.status(500).json({ success: false, error: 'Error interno al succionar grupo' });
+  }
+});
+
+// 🔍 ENDPOINT: Listar grupos disponibles
+app.get('/api/grupos/listar', async (req: Request, res: Response) => {
+  try {
+    const socket = getSocket();
+    if (!socket) {
+      return res.status(500).json({ success: false, error: 'WhatsApp no conectado' });
+    }
+
+    const chats = await socket.groupFetchAllParticipating();
+    const grupos = Object.values(chats)
+      .filter((chat: any) => chat.id.endsWith('@g.us'))
+      .map((grupo: any) => ({
+        id: grupo.id.replace('@g.us', ''),
+        nombre: grupo.subject,
+        participantes: grupo.participants?.length || 0,
+      }));
+
+    res.json({ success: true, total: grupos.length, grupos });
+  } catch (error) {
+    console.error('❌ API: Error listando grupos:', error);
+    res.status(500).json({ success: false, error: 'Error al listar grupos' });
+  }
+});
+
+// 📢 ENDPOINT: Publicar en Facebook (preparado para mañana)
+app.post('/api/facebook/publicar', async (req: Request, res: Response) => {
+  try {
+    console.log('📢 Iniciando publicación en Facebook...');
+
+    // TODO: Implementar integración con Meta Graph API
+    // Por ahora, simulación para mañana
+
+    res.json({
+      success: true,
+      publicadas: 5,
+      mensaje: 'Vacantes publicadas en Facebook (simulación - mañana real)',
+    });
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ success: false, error: 'Error publicando' });
+  }
+});
+
 // Inicializar servidor
 const iniciar = async () => {
   try {
     console.log('🔧 Inicializando Baileys (WhatsApp)...');
     await inicializarBaileys();
 
+    // 🌪️ Iniciar monitoreo automático de Aspiradora 3000
+    console.log('🌪️ Iniciando Aspiradora 3000...');
+    const sock = getSocket();
+    if (sock) {
+      await aspiradoraStreaming.iniciarMonitoreo(sock);
+      console.log('✅ Aspiradora 3000 ACTIVA - Monitoreando grupo jefecito 24/7');
+    } else {
+      console.warn('⚠️ Aspiradora 3000 esperará conexión de WhatsApp');
+    }
+
     app.listen(PORT, () => {
       console.log(`✅ Servidor iniciado en puerto ${PORT}`);
       console.log(`📱 Webhook WhatsApp: http://localhost:${PORT}/webhook/whatsapp`);
       console.log(`💬 Test: POST http://localhost:${PORT}/test-message`);
       console.log(`🏥 Health: http://localhost:${PORT}/health`);
+      console.log(`🌪️ Aspiradora Stream: http://localhost:${PORT}/api/aspiradora/stream`);
     });
   } catch (error) {
     console.error('❌ Error fatal al iniciar:', error);

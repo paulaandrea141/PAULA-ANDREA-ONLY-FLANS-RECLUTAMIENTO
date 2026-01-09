@@ -16,7 +16,7 @@ interface ExtractedData {
 
 let groq: Groq | null = null;
 
-function getGroqClient(): Groq {
+export function getGroqClient(): Groq {
   if (!groq) {
     groq = new Groq({
       apiKey: process.env.GROQ_API_KEY || 'dummy_key_for_dev',
@@ -69,7 +69,7 @@ export async function generateAIResponse(
 
     // Llamar a Groq (API GRATIS - sin tarjeta)
     const completion = await getGroqClient().chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
+      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...messages.map((m) => ({

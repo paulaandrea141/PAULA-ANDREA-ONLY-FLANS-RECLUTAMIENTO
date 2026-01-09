@@ -6,6 +6,14 @@ import makeWASocket, {
 import qrcode from 'qrcode-terminal';
 import { BotWhatsAppService } from './whatsapp-bot-service';
 
+/**
+ * 🔥 WHATSAPP VINCULADO: Paula Specter - CEO CORP. TYRELL
+ * Número: [PROTEGIDO]
+ * Sistema: Aspiradora 3000 - Monitoreo permanente 24/7
+ */
+export const PAULA_WHATSAPP = process.env.SECRET_CEO_WHATSAPP?.replace(/[^0-9]/g, '') || '528124206561'; // Sin espacios ni +
+export const PAULA_WHATSAPP_FORMATTED = process.env.SECRET_CEO_WHATSAPP || '+528124206561';
+
 let sock: ReturnType<typeof makeWASocket>;
 let isConnected = false;
 
@@ -26,8 +34,15 @@ export const inicializarBaileys = async () => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('📱 Escanea este QR con WhatsApp:');
+      console.log('\n========================================');
+      console.log('📱 WHATSAPP - VINCULACIÓN PAULA SPECTER');
+      console.log('========================================');
+      console.log(`📞 Número CEO: ${PAULA_WHATSAPP_FORMATTED}`);
+      console.log('🌪️ Sistema: Aspiradora 3000');
+      console.log('\n📱 Escanea este QR con WhatsApp:\n');
       qrcode.generate(qr, { small: true });
+      console.log('\n✅ Una vez escaneado, la conexión será PERMANENTE');
+      console.log('========================================\n');
     }
 
     if (connection === 'open') {
