@@ -616,8 +616,13 @@ const iniciar = async () => {
     console.log('🌪️ Iniciando Aspiradora 3000...');
     const sock = getSocket();
     if (sock) {
-      await aspiradoraStreaming.iniciarMonitoreo(sock);
-      console.log('✅ Aspiradora 3000 ACTIVA - Monitoreando grupo jefecito 24/7');
+      try {
+        await aspiradoraStreaming.iniciarMonitoreo(sock);
+        console.log('✅ Aspiradora 3000 ACTIVA - Monitoreando grupo jefecito 24/7');
+      } catch (error) {
+        console.warn('⚠️ Aspiradora 3000: Error al iniciar monitoreo (WhatsApp desconectado)');
+        console.log('💡 Tip: Escanea el QR code para conectar WhatsApp');
+      }
     } else {
       console.warn('⚠️ Aspiradora 3000 esperará conexión de WhatsApp');
     }
