@@ -16,7 +16,8 @@ export class AspiradoraStreamingService {
   private vacantesDetectadas = 0;
   private monitoreoActivo = false;
   private groq: Groq;
-  private grupoJefecitoId: string | null = null;
+  // 🎯 ID CONFIRMADO POR PAULA (Grupo "FREELANCE RICARDO BYG")
+  private readonly GRUPO_JEFECITO = '120363097823040111@g.us';
 
   constructor() {
     this.groq = new Groq({
@@ -154,13 +155,16 @@ export class AspiradoraStreamingService {
     console.log('🌪️ INICIANDO MONITOREO PERMANENTE DE GRUPO JEFECITO...');
 
     // Buscar grupo "jefecito"
-    const grupos = await sock.groupFetchAllParticipating();
-    const gruposArray = Object.values(grupos);
-    const grupoJefecito = gruposArray.find((g: any) =>
-      g.subject.toLowerCase().includes('jefecito')
-    );
+    // const grupos = await sock.groupFetchAllParticipating();
+    // const gruposArray = Object.values(grupos);
+    // const grupoJefecito = gruposArray.find((g: any) =>
+    //   g.subject.toLowerCase().includes('jefecito')
+    // );
+    
+    // 🔥 PAULA DIJO QUE USEMOS EL ID DIRECTO DE "FREELANCE RICARDO BYG"
+    this.grupoJefecitoId = this.GRUPO_JEFECITO;
 
-    if (!grupoJefecito) {
+    if (!this.grupoJefecitoId) {
       console.error('❌ Grupo "jefecito" no encontrado');
       throw new Error('Grupo "jefecito" no encontrado');
     }

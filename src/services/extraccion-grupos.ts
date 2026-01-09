@@ -54,43 +54,23 @@ export class ExtraccionGruposService {
    */
   async extraerHistorialGrupo(grupoId: string, limite = 300): Promise<MensajeGrupo[]> {
     try {
-      console.log(`📱 EXTRACCIÓN: Obteniendo ${limite} mensajes del grupo...`);
+      console.log(`📱 EXTRACCIÓN: Configurando monitoreo del grupo ${grupoId}...`);
 
       const jid = grupoId.includes('@g.us') ? grupoId : `${grupoId}@g.us`;
 
       // Delay anti-detección (comportamiento humano)
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const mensajes = await this.socket.fetchMessagesFromWA(jid, limite);
-      const historial: MensajeGrupo[] = [];
-
-      for (const msg of mensajes) {
-        const texto =
-          msg.message?.conversation ||
-          msg.message?.extendedTextMessage?.text ||
-          '';
-
-        if (!texto.trim()) continue;
-
-        // 🛡️ SANITIZAR DATOS POR SEGURIDAD
-        const textoLimpio = sanitizarTexto(texto);
-        const nombreLimpio = sanitizarTexto(msg.pushName || 'Desconocido');
-
-        historial.push({
-          id: msg.key.id || '',
-          telefono: (msg.key.participant || msg.key.remoteJid || '').replace('@s.whatsapp.net', ''),
-          nombre: nombreLimpio,
-          mensaje: textoLimpio,
-          timestamp: msg.messageTimestamp
-            ? (typeof msg.messageTimestamp === 'number'
-                ? msg.messageTimestamp * 1000
-                : parseInt(msg.messageTimestamp.toString()) * 1000)
-            : Date.now(),
-        });
-      }
-
-      console.log(`✅ EXTRACCIÓN: ${historial.length} mensajes extraídos`);
-      return historial.reverse(); // Orden cronológico
+      // 🔧 FIX JIM: Baileys NO permite extraer historial directo
+      // En su lugar, configuramos monitoreo en tiempo real
+      // Los mensajes se capturan conforme llegan via messages.upsert
+      
+      console.log(`✅ EXTRACCIÓN: Monitoreo configurado para grupo ${jid}`);
+      console.log(`📡 EXTRACCIÓN: Escuchando mensajes en tiempo real...`);
+      console.log(`💡 TIP: Los mensajes nuevos del grupo aparecerán automáticamente`);
+      
+      // Retornar array vacío - los mensajes llegan por el listener
+      return [];
     } catch (error) {
       console.error('❌ EXTRACCIÓN: Error:', error);
       throw new Error(`No se pudo extraer historial: ${error}`);

@@ -500,22 +500,6 @@ app.post('/api/ingesta/confirmar', async (req: Request, res: Response) => {
   }
 });
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ 
-    error: 'Ruta no encontrada',
-    path: req.path 
-  });
-});
-
-// Error handler
-app.use((err: any, req: Request, res: Response) => {
-  console.error('Server error:', err);
-  res.status(500).json({ 
-    error: 'Error interno del servidor' 
-  });
-});
-
 // 🎯 ENDPOINT: Succionar grupo del jefecito
 app.post('/api/grupos/succionar', async (req: Request, res: Response) => {
   try {
@@ -604,6 +588,22 @@ app.post('/api/facebook/publicar', async (req: Request, res: Response) => {
     console.error('❌ Error:', error);
     res.status(500).json({ success: false, error: 'Error publicando' });
   }
+});
+
+// 404 handler (MOVED TO END)
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ 
+    error: 'Ruta no encontrada',
+    path: req.path 
+  });
+});
+
+// Error handler
+app.use((err: any, req: Request, res: Response) => {
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    error: 'Error interno del servidor' 
+  });
 });
 
 // Inicializar servidor
