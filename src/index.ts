@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import multer from 'multer';
 import { inicializarBaileys } from './bot/baileys-service';
 import { WebhookWhatsApp } from './bot/webhook-handler';
 import { FacebookWebhookHandler } from './bot/facebook-webhook-handler';
@@ -9,9 +10,25 @@ import { collection, addDoc } from 'firebase/firestore';
 import { ExportacionService } from './services/exportacion-service';
 import { SeguimientoContratacionService } from './services/seguimiento-contratacion';
 import { IngestaVacantesService } from './services/ingesta-vacantes';
+import { VisionOCRService } from './services/vision-ocr-service';
+import { ContextoSesion } from './services/contexto-sesion';
+import Groq from 'groq-sdk';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configurar multer para subida de imágenes
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB máximo
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes'));
+    }
+  },
+});
 
 // Middleware
 app.use(express.json());
@@ -202,6 +219,89 @@ app.post('/api/vacantes/extract', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Error interno al procesar la ingesta'
+    });
+  }
+});
+
+// 📸 ENDPOINT: Procesar captura de WhatsApp con Llama Vision
+app.post('/api/vacantes/extract/image', upload.single('imagen'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No se recibió ninguna imagen',
+      });
+    }
+
+    console.log('📸 VISION: Recibida imagen de', req.file.size, 'bytes');
+
+    // Convertir a base64
+    const imagenBase64 = req.file.buffer.toString('base64');
+
+    // Procesar con Llama Vision
+    const resultado = await VisionOCRService.procesarImagenCompleta(imagenBase64);
+
+    if (!resultado.exito) {
+      return res.status(400).json({
+        success: false,
+        error: resultado.error,
+      });
+    }
+
+    res.json({
+      success: true,
+      textoExtraido: resultado.textoExtraido,
+      datosVacante: resultado.datosVacante,
+      mensaje: 'Imagen procesada con éxito',
+    });
+  } catch (error) {
+    console.error('❌ Error procesando imagen:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno al procesar imagen',
+    });
+  }
+});
+
+// 🎤 ENDPOINT: Procesar comando de voz
+app.post('/api/voice/command', async (req: Request, res: Response) => {
+  try {
+    const { comando, userId = 'jefa' } = req.body;
+
+    if (!comando) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere campo "comando"',
+      });
+    }
+
+    console.log(`🎤 VOZ: Comando de ${userId}: "${comando}"`);
+
+    // Generar prompt con contexto
+    const promptConContexto = ContextoSesion.generarPromptConContexto(userId, comando);
+
+    // Analizar con Groq
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'user', content: promptConContexto },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    });
+
+    const resultado = JSON.parse(completion.choices[0].message.content || '{}');
+
+    res.json({
+      success: true,
+      resultado,
+    });
+  } catch (error) {
+    console.error('❌ Error procesando comando de voz:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al procesar comando',
     });
   }
 });
