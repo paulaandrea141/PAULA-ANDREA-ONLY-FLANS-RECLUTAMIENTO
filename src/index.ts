@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 import { inicializarBaileys } from './bot/baileys-service';
 import { WebhookWhatsApp } from './bot/webhook-handler';
 import { FacebookWebhookHandler } from './bot/facebook-webhook-handler';
@@ -31,10 +33,43 @@ const upload = multer({
   },
 });
 
+// Rate Limiting - Protección contra abuso
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // máximo 100 requests por IP
+  message: '⚠️ Demasiados requests. Intenta en 15 minutos.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// CORS - Permitir frontend
+const allowedOrigins = [
+  'http://localhost:3001',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL || '',
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (Postman, mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('❌ CORS: Origen no permitido'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 // Middleware
 app.use(express.json());
+app.use('/api/', limiter); // Rate limit solo en rutas API
 app.use((req: Request, res: Response, next) => {
-  res.header('X-Powered-By', 'Only Flans');
+  res.header('X-Powered-By', 'Only Flans - CORP. TYRELL');
   next();
 });
 
