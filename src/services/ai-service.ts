@@ -69,7 +69,7 @@ export async function generateAIResponse(
 
     // Llamar a Groq (API GRATIS - sin tarjeta)
     const completion = await getGroqClient().chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      model: 'llama-3.3-70b-versatile', // MODELO ACTUALIZADO 2026
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...messages.map((m) => ({

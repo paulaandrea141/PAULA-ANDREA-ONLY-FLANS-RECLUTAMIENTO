@@ -169,10 +169,10 @@ export class AspiradoraStreamingService {
       throw new Error('Grupo "jefecito" no encontrado');
     }
 
-    this.grupoJefecitoId = (grupoJefecito as any).id;
-    console.log(`✅ Grupo "jefecito" encontrado: ${this.grupoJefecitoId}`);
+    console.log(`✅ Grupo BYG activado: ${this.grupoJefecitoId}`);
+    console.log(`🌪️ ASPIRADORA 3000 - MONITOREO 24/7 ACTIVO`);
 
-    // Escuchar TODOS los mensajes nuevos
+    // Escuchar TODOS los mensajes nuevos del grupo BYG
     sock.ev.on('messages.upsert', async ({ messages, type }: { messages: WAMessage[]; type: any }) => {
       if (type !== 'notify') return;
 
@@ -182,7 +182,7 @@ export class AspiradoraStreamingService {
     });
 
     this.monitoreoActivo = true;
-    console.log('✅ MONITOREO ACTIVO - ASPIRADORA 3000 EN GUARDIA 24/7');
+    console.log('✅ ASPIRADORA 3000 EN GUARDIA PERMANENTE - GRUPO BYG');
   }
 
   /**

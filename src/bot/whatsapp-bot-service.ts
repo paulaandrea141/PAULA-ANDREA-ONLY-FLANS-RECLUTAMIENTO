@@ -32,12 +32,11 @@ class BotWhatsAppServiceClass {
     // Auditoria.registrar('SISTEMA', '🚀 Bot WhatsApp inicializado');
     console.log('🚀 Bot WhatsApp inicializado');
     
-    // Iniciar publicador automático de grupos
-    this.publicadorGrupos = new PublicadorGruposService(socket);
-    this.publicadorGrupos.iniciarPublicacionAutomatica();
-    
-    // Auditoria.registrar('WHATSAPP', '✅ Publicador automático activado');
-    console.log('✅ Publicador automático activado');
+    // 🔥 PAULA: NO PUBLICAR, SOLO ESCUCHAR
+    // Publicador automático DESACTIVADO por orden de la CEO
+    // this.publicadorGrupos = new PublicadorGruposService(socket);
+    // this.publicadorGrupos.iniciarPublicacionAutomatica();
+    console.log('🌪️ Modo SUCCIÓN PURA - NO se publicará en grupos');
     
     console.log('✅ Bot WhatsApp Service COMPLETO inicializado');
   }
