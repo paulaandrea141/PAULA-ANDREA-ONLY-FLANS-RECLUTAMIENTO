@@ -1607,30 +1607,30 @@ COMANDOS SEGUROS:
 ═══════════════════════════════════════════════════════════════════
 
 -
-SESI�N 3 - 7 de enero 2026 (AUDITOR�A Y VERIFICACI�N FINAL)
+SESI�N 3 - 7 de enero 2026 (AUDITOR�A Y VERIFICACI�N FINAL)
 -
 
-AUDITOR�A BACKEND (OnlyFlans/) - PUNTOS 1 A 4 COMPLETADOS 
+AUDITOR�A BACKEND (OnlyFlans/) - PUNTOS 1 A 4 COMPLETADOS 
 
 
-PUNTO 1: REVISI�N COMPLETA C�DIGO BACKEND 
+PUNTO 1: REVISI�N COMPLETA C�DIGO BACKEND 
    src/index.ts: Tipos correctos, 404 handler
    src/services/ai-service.ts: Groq API llama-3.1-70b
-   src/bot/baileys-service.ts: WhatsApp aut�nomo
+   src/bot/baileys-service.ts: WhatsApp aut�nomo
    src/routes/vacantes.ts: CRUD endpoints
    src/database/firebase-config.ts: Firestore SDK v11
   
   Result: npm run build = SUCCESS (0 ERRORES)
 
-PUNTO 2: VERIFICACI�N -  NO HAY COBROS/PAGOS !!! 
-  B�squeda: "stripe", "payment", "cobro", "pago", "precio", etc.
-  Resultado: NING�N COBRO ENCONTRADO
+PUNTO 2: VERIFICACI�N -  NO HAY COBROS/PAGOS !!! 
+  B�squeda: "stripe", "payment", "cobro", "pago", "precio", etc.
+  Resultado: NING�N COBRO ENCONTRADO
   
    100% GRATIS:
       Firebase Firestore: Spark Plan (GRATIS)
-      Groq API: Sin l�mites, sin tarjeta (GRATIS)
+      Groq API: Sin l�mites, sin tarjeta (GRATIS)
       Baileys: Open source (GRATIS)
-      WhatsApp: Tu tel�fono (GRATIS)
+      WhatsApp: Tu tel�fono (GRATIS)
 
 PUNTO 3: OPTIMIZACIONES APLICADAS 
    Groq Model: llama-3.1-70b-versatile
@@ -1646,7 +1646,7 @@ PUNTO 4: SEGURIDAD AUDITADA
    Firestore Security Rules
 
 
-ESTADO FINAL: BACKEND  LISTO PARA PRODUCCI�N
+ESTADO FINAL: BACKEND  LISTO PARA PRODUCCI�N
 
 BUILD: 0 errores
 GRATIS: 100% confirmado
@@ -1673,22 +1673,110 @@ ARCHIVOS MODIFICADOS:
 - OnlyFlans/package.json (+ dependencia xlsx)
 
 FUNCIONALIDADES:
- Detección automática de frases de confirmación
- Marcado automático como CONTRATADO
- Dashboard con color VERDE NEÓN (#00FF00)
- Badge especial ' CONTRATADO'
- Exportación Excel para el Jefecito
- Exportación JSON y HTML
- Endpoints API operativos
- Integración WhatsApp Bot completa
- Sistema de auditoría activo
+✅ Detección automática de frases de confirmación
+✅ Marcado automático como CONTRATADO
+✅ Dashboard con color VERDE NEÓN (#00FF00)
+✅ Badge especial '⭐ CONTRATADO'
+✅ Exportación Excel para el Jefecito
+✅ Exportación JSON y HTML
+✅ Endpoints API operativos
+✅ Integración WhatsApp Bot completa
+✅ Sistema de auditoría activo
 
 RAMA-1:
- Creada exitosamente: rama-1
- Push a GitHub completado
- URL: https://github.com/paulaandrea141/CORP_TYRELL/tree/rama-1
+✅ Creada exitosamente: rama-1
+✅ Push a GitHub completado
+✅ URL: https://github.com/paulaandrea141/CORP_TYRELL/tree/rama-1
 
-ESTADO FINAL:  SISTEMA 100% OPERATIVO
+ESTADO FINAL: ✅ SISTEMA 100% OPERATIVO
 Tech Lead: Paula Specter (@SpecterTech)
 
+===============================================
+SESIÓN 4 - PROTOCOLO VISTA DE ÁGUILA: BOB CHAT
+Fecha: 5 de enero de 2026
+CEO: Paula Andrea Hayle (Jessica Pearson) 👑
+COO: Bob - Socio Mayoritario (Louis Litt) 🧠
+===============================================
 
+ARQUITECTURA BOB CHAT INTERACTIVO:
+==================================
+Ingesta 3.0 multimodal evolucionó a interfaz conversacional
+donde Paula puede hablar con el dashboard como si hablara con Bob.
+Sistema de confirmaciones estilo WhatsApp con persistencia Firebase.
+
+ARCHIVOS CREADOS:
+-----------------
+1. OnlyFlans/src/services/historial-ingesta-service.ts (220 líneas)
+   - Firebase Firestore: colección 'historial_ingesta'
+   - registrarMensajeUsuario(contenido, tipoInput)
+   - registrarRespuestaIA(contenido, empresas[], accion, vacanteId?)
+   - obtenerHistorial() → últimos 50 mensajes
+   - generarRespuestaConfirmacion() → respuestas estilo Bob
+   
+2. onlyflans-web/components/HistorialChat.tsx (280 líneas)
+   - UI estilo WhatsApp con avatars
+   - 👑 JESSICA PEARSON (Paula)
+   - 🧠 BOB - LOUIS LITT (IA)
+   - Auto-refresh cada 30 segundos
+   - Auto-scroll a mensaje más reciente
+   - Iconos input: ⌨️ texto, 📸 imagen, 🎤 voz
+   - Tags empresas detectadas
+   - Status badges: ✅ Guardada, ❌ Rechazada, ⏳ Pendiente
+   - Stats footer con total mensajes
+
+ENDPOINTS BACKEND AÑADIDOS:
+---------------------------
+OnlyFlans/src/index.ts (modificado):
+1. GET /api/historial/ingesta
+   → Retorna historial completo
+   
+2. POST /api/historial/mensaje
+   → Registra mensaje de usuario
+   Body: { contenido: string, tipoInput: 'texto'|'imagen'|'voz' }
+   
+3. POST /api/ingesta/confirmar
+   → Confirma aceptación/rechazo de vacante
+   Body: { accion: string, vacanteId?: string, empresas: [] }
+
+FRONTEND DASHBOARD:
+-------------------
+onlyflans-web/pages/index.tsx (modificado):
+- Import HistorialChat component
+- Estado: mostrarHistorial (true by default)
+- Estado: vacantesPendientes (array para confirmaciones)
+- handleImageUpload modificado:
+  * Registra mensaje usuario ANTES de procesar
+  * Registra respuesta IA DESPUÉS de detectar empresa
+  * Añade vacantes a lista pendientes
+  * Auto-publica si autoPublicar=true
+- Panel lateral derecho (w-96, fixed, z-50)
+- Toggle button bottom-right (naranja gradient)
+- Texto: "👁️ Ocultar Chat" / "💬 Mostrar Chat"
+
+RESPUESTAS BOB (estilo Louis Litt):
+------------------------------------
+- Sin empresas: "Jessica, no detecté empresas claras en ese mugrero"
+- 1 empresa: "Jessica, ya leí la captura. Es DAMAR con 1 vacante. ¿La mando a la Ristra?"
+- +2 empresas: "Jessica, detecté 5 empresas: DAMAR, ILSAN, MAGNEKON. ¿Las subo todas?"
+- Confirmación: "Jessica, DAMAR guardada. Ya está en la Ristra."
+- Rechazo: "Jessica, descartando captura. No se guardó nada."
+
+ESTRUCTURA MENSAJES FIREBASE:
+------------------------------
+Interface MensajeHistorial:
+{
+  id?: string
+  tipo: 'usuario' | 'ia'
+  contenido: string
+  timestamp: number
+  metadatos?: {
+    tipoInput: 'texto' | 'imagen' | 'voz'
+    empresasDetectadas?: string[]
+    accionTomada?: 'guardada' | 'rechazada' | 'pendiente'
+    vacanteId?: string
+  }
+}
+
+COSTO TOTAL: $0 (Firebase Spark Tier)
+
+ESTADO SESIÓN 4: ✅ BOB CHAT 100% INTEGRADO

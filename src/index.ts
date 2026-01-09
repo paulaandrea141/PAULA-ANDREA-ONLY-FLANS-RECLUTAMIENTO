@@ -12,6 +12,7 @@ import { SeguimientoContratacionService } from './services/seguimiento-contratac
 import { IngestaVacantesService } from './services/ingesta-vacantes';
 import { VisionOCRService } from './services/vision-ocr-service';
 import { ContextoSesion } from './services/contexto-sesion';
+import { HistorialIngestaService } from './services/historial-ingesta-service';
 import Groq from 'groq-sdk';
 
 const app = express();
@@ -302,6 +303,95 @@ app.post('/api/voice/command', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Error al procesar comando',
+    });
+  }
+});
+
+// 💬 ENDPOINT: Obtener historial de chat
+app.get('/api/historial/ingesta', async (req: Request, res: Response) => {
+  try {
+    const historial = await HistorialIngestaService.obtenerHistorial();
+    res.json({
+      success: true,
+      total: historial.length,
+      mensajes: historial,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo historial:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener historial',
+    });
+  }
+});
+
+// 💬 ENDPOINT: Registrar mensaje usuario
+app.post('/api/historial/mensaje', async (req: Request, res: Response) => {
+  try {
+    const { contenido, tipoInput } = req.body;
+
+    if (!contenido || !tipoInput) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requiere contenido y tipoInput',
+      });
+    }
+
+    const id = await HistorialIngestaService.registrarMensajeUsuario(contenido, tipoInput);
+    res.json({
+      success: true,
+      mensajeId: id,
+    });
+  } catch (error) {
+    console.error('❌ Error registrando mensaje:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al registrar mensaje',
+    });
+  }
+});
+
+// 💬 ENDPOINT: Confirmar acción (Aceptar/Rechazar)
+app.post('/api/ingesta/confirmar', async (req: Request, res: Response) => {
+  try {
+    const { accion, vacanteId, empresas = [] } = req.body;
+
+    if (!accion || !['aceptar', 'rechazar'].includes(accion)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Acción inválida. Usa "aceptar" o "rechazar"',
+      });
+    }
+
+    if (accion === 'aceptar' && vacanteId) {
+      await HistorialIngestaService.registrarRespuestaIA(
+        '🎯 Vacante confirmada y publicada en la Ristra. Los candidatos ya pueden verla.',
+        empresas,
+        'guardada',
+        vacanteId
+      );
+
+      res.json({
+        success: true,
+        mensaje: 'Vacante publicada exitosamente',
+      });
+    } else if (accion === 'rechazar') {
+      await HistorialIngestaService.registrarRespuestaIA(
+        '❌ Vacante rechazada por Paula. No se publicó.',
+        empresas,
+        'rechazada'
+      );
+
+      res.json({
+        success: true,
+        mensaje: 'Vacante rechazada',
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error confirmando acción:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al confirmar acción',
     });
   }
 });
