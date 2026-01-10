@@ -2,6 +2,7 @@ import type { WASocket } from '@whiskeysockets/baileys';
 import { getGroqClient } from './ai-service';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { colaMensajes } from './cola-mensajes';
 
 /**
  * 🔥 SERVICIO EXTRACTOR JEFECITO - CORP. TYRELL
@@ -54,23 +55,30 @@ export class ExtraccionGruposService {
    */
   async extraerHistorialGrupo(grupoId: string, limite = 300): Promise<MensajeGrupo[]> {
     try {
-      console.log(`📱 EXTRACCIÓN: Configurando monitoreo del grupo ${grupoId}...`);
+      console.log(`📱 EXTRACCIÓN: Obteniendo mensajes de la cola para ${grupoId}...`);
 
       const jid = grupoId.includes('@g.us') ? grupoId : `${grupoId}@g.us`;
 
-      // Delay anti-detección (comportamiento humano)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 🗄️ OBTENER MENSAJES DE LA COLA
+      const mensajesCache = colaMensajes.obtener(jid, limite);
 
-      // 🔧 FIX JIM: Baileys NO permite extraer historial directo
-      // En su lugar, configuramos monitoreo en tiempo real
-      // Los mensajes se capturan conforme llegan via messages.upsert
-      
-      console.log(`✅ EXTRACCIÓN: Monitoreo configurado para grupo ${jid}`);
-      console.log(`📡 EXTRACCIÓN: Escuchando mensajes en tiempo real...`);
-      console.log(`💡 TIP: Los mensajes nuevos del grupo aparecerán automáticamente`);
-      
-      // Retornar array vacío - los mensajes llegan por el listener
-      return [];
+      if (mensajesCache.length === 0) {
+        console.log(`⚠️ EXTRACCIÓN: No hay mensajes en caché para ${jid}`);
+        console.log(`💡 TIP: Los mensajes se guardan automáticamente cuando llegan. Espera a que el grupo tenga actividad.`);
+        return [];
+      }
+
+      // Convertir a formato MensajeGrupo
+      const mensajes: MensajeGrupo[] = mensajesCache.map(m => ({
+        id: `${m.timestamp}`,
+        timestamp: m.timestamp,
+        remitente: m.remitente,
+        nombre: m.nombre,
+        mensaje: m.mensaje,
+      }));
+
+      console.log(`✅ EXTRACCIÓN: ${mensajes.length} mensajes extraídos de la cola`);
+      return mensajes;
     } catch (error) {
       console.error('❌ EXTRACCIÓN: Error:', error);
       throw new Error(`No se pudo extraer historial: ${error}`);

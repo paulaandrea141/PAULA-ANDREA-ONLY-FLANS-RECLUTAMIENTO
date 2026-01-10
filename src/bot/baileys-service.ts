@@ -5,6 +5,7 @@ import makeWASocket, {
 } from 'baileys';
 import qrcode from 'qrcode-terminal';
 import { BotWhatsAppService } from './whatsapp-bot-service';
+import { colaMensajes } from '../services/cola-mensajes';
 
 /**
  * 🔥 WHATSAPP VINCULADO: Paula Specter - CEO CORP. TYRELL
@@ -77,6 +78,19 @@ export const inicializarBaileys = async () => {
 
     if (texto.trim()) {
       console.log(`📨 Mensaje de ${remoteJid}: ${texto}`);
+      
+      // 🗄️ GUARDAR EN COLA si es mensaje de grupo
+      if (remoteJid.includes('@g.us')) {
+        const pushName = msg.pushName || 'Desconocido';
+        colaMensajes.agregar(remoteJid, {
+          grupoId: remoteJid,
+          timestamp: (msg.messageTimestamp as number) * 1000,
+          remitente: msg.key.participant || remoteJid,
+          nombre: pushName,
+          mensaje: texto,
+        });
+      }
+      
       await BotWhatsAppService.procesarMensajeEntrante(remoteJid, texto);
     }
   });

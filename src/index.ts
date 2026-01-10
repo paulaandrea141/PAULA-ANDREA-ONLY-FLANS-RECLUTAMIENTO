@@ -18,6 +18,7 @@ import { HistorialIngestaService } from './services/historial-ingesta-service';
 import { ExtraccionGruposService } from './services/extraccion-grupos';
 import { getSocket } from './bot/baileys-service';
 import { AspiradoraStreamingService } from './services/aspiradora-streaming';
+import { groqChatRouter } from './routes/groq-chat';
 import Groq from 'groq-sdk';
 
 const app = express();
@@ -81,6 +82,7 @@ app.use((req: Request, res: Response, next) => {
 
 // API Routes
 app.use('/api/vacantes', vacantesRouter);
+app.use('/api/groq', groqChatRouter);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
