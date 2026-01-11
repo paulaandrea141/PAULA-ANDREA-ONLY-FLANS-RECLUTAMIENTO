@@ -72,7 +72,7 @@ export class ExtraccionGruposService {
       const mensajes: MensajeGrupo[] = mensajesCache.map(m => ({
         id: `${m.timestamp}`,
         timestamp: m.timestamp,
-        remitente: m.remitente,
+        telefono: m.remitente,
         nombre: m.nombre,
         mensaje: m.mensaje,
       }));

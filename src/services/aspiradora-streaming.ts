@@ -16,13 +16,57 @@ export class AspiradoraStreamingService {
   private vacantesDetectadas = 0;
   private monitoreoActivo = false;
   private groq: Groq;
+  private grupoJefecitoId: string | null = null;
   // 🎯 ID CONFIRMADO POR PAULA (Grupo "FREELANCE RICARDO BYG")
   private readonly GRUPO_JEFECITO = '120363097823040111@g.us';
+  private contextoMensajes: Array<{contenido: string; autor: string; timestamp: Date}> = [];
 
   constructor() {
     this.groq = new Groq({
       apiKey: process.env.GROQ_API_KEY || '',
     });
+    
+    // 🔥 INTERCEPTAR console.log para enviar al frontend
+    this.interceptarConsole();
+  }
+
+  /**
+   * Intercepta console.log y envía al frontend
+   */
+  private interceptarConsole() {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.log = (...args: any[]) => {
+      originalLog.apply(console, args);
+      const mensaje = args.join(' ');
+      this.enviarEvento('todos', 'log', {
+        tipo: 'info',
+        mensaje,
+        timestamp: new Date(),
+      });
+    };
+    
+    console.error = (...args: any[]) => {
+      originalError.apply(console, args);
+      const mensaje = args.join(' ');
+      this.enviarEvento('todos', 'log', {
+        tipo: 'error',
+        mensaje,
+        timestamp: new Date(),
+      });
+    };
+    
+    console.warn = (...args: any[]) => {
+      originalWarn.apply(console, args);
+      const mensaje = args.join(' ');
+      this.enviarEvento('todos', 'log', {
+        tipo: 'warn',
+        mensaje,
+        timestamp: new Date(),
+      });
+    };
   }
 
   /**
@@ -144,6 +188,13 @@ export class AspiradoraStreamingService {
   }
 
   /**
+   * 🧪 Método público para enviar mensajes de prueba
+   */
+  public enviarMensajePrueba(mensaje: any) {
+    this.enviarEvento('todos', 'mensaje', mensaje);
+  }
+
+  /**
    * Inicia el monitoreo permanente del grupo jefecito
    */
   async iniciarMonitoreo(sock: WASocket): Promise<void> {
@@ -171,6 +222,12 @@ export class AspiradoraStreamingService {
 
     console.log(`✅ Grupo BYG activado: ${this.grupoJefecitoId}`);
     console.log(`🌪️ ASPIRADORA 3000 - MONITOREO 24/7 ACTIVO`);
+
+    // ℹ️ Informar al frontend que el sistema está listo
+    this.enviarEvento('todos', 'info', {
+      mensaje: '🌪️ ASPIRADORA 3000 ACTIVADA - Monitoreando grupo jefecito en tiempo real. Envía un mensaje al grupo para probarlo.',
+      timestamp: new Date(),
+    });
 
     // Escuchar TODOS los mensajes nuevos del grupo BYG
     sock.ev.on('messages.upsert', async ({ messages, type }: { messages: WAMessage[]; type: any }) => {
@@ -218,6 +275,12 @@ export class AspiradoraStreamingService {
       // Incrementar contador
       this.mensajesProcesados++;
 
+      // 🧠 GUARDAR EN CONTEXTO (últimos 50 mensajes)
+      this.contextoMensajes.unshift({ contenido, autor, timestamp });
+      if (this.contextoMensajes.length > 50) {
+        this.contextoMensajes.pop();
+      }
+
       // Enviar mensaje a todos los clientes conectados
       this.enviarEvento('todos', 'mensaje', {
         id: key.id || `msg-${Date.now()}`,
@@ -228,100 +291,90 @@ export class AspiradoraStreamingService {
         esVacante: false,
       });
 
-      // Procesar con Groq IA (asíncrono, no bloquea)
-      this.analizarConGroqAsync(contenido, key.id || `msg-${Date.now()}`, timestamp);
+      // 🤖 GROQ: Analizar mensaje y generar respuesta
+      this.procesarMensajeConGroq(contenido, autor, key.id || `msg-${Date.now()}`, timestamp);
     } catch (error) {
       console.error('❌ Error procesando mensaje en tiempo real:', error);
     }
   }
 
   /**
-   * Analiza un mensaje con Groq IA (asíncrono)
+   * 🤖 GROQ: Procesa mensaje completo (detecta vacante + genera respuesta)
    */
-  private async analizarConGroqAsync(
+  private async procesarMensajeConGroq(
     contenido: string,
+    autor: string,
     mensajeId: string,
     timestamp: Date
   ): Promise<void> {
     try {
-      // Notificar que Groq está procesando
-      this.enviarEvento('todos', 'estadisticas', {
-        mensajesTotales: this.mensajesProcesados,
-        vacantesDetectadas: this.vacantesDetectadas,
-        timestamp: new Date(),
-        groqProcesando: true,
-      });
+      // 🧠 Construir contexto de los últimos mensajes
+      const contextoTexto = this.contextoMensajes
+        .slice(0, 10)
+        .map(m => `[${m.autor}]: ${m.contenido}`)
+        .join('\n');
 
-      const prompt = `
-Eres un extractor de vacantes de trabajo. Analiza el siguiente mensaje de WhatsApp y determina si contiene información de una vacante.
+      const prompt = `Eres Paula Specter, CEO de CORP. TYRELL, empresa de reclutamiento. Analiza el mensaje y:
 
-MENSAJE:
-"${contenido}"
+1. Determina si es una VACANTE de trabajo
+2. Si es vacante, genera una RESPUESTA PROFESIONAL para responder al grupo
 
-RESPONDE EN FORMATO JSON:
+CONTEXTO DE LA CONVERSACIÓN (últimos 10 mensajes):
+${contextoTexto}
+
+MENSAJE ACTUAL:
+[${autor}]: ${contenido}
+
+RESPONDE EN JSON:
 {
   "esVacante": true/false,
-  "puesto": "nombre del puesto",
-  "empresa": "nombre de la empresa",
-  "sueldo": "rango salarial",
-  "ubicacion": "ciudad/zona",
+  "puesto": "puesto ofrecido",
+  "empresa": "nombre empresa",
+  "salario": "rango salarial",
   "requisitos": ["req1", "req2"],
-  "confianza": 0-100
+  "confianza": 0-100,
+  "respuesta": "Mensaje profesional para responder al grupo (solo si es vacante)"
 }
 
-Si NO es una vacante, responde: {"esVacante": false}
-`;
+Si NO es vacante, responde: {"esVacante": false, "respuesta": null}`;
 
       const completion = await this.groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama-3.3-70b-versatile',
-        temperature: 0.3,
-        max_tokens: 500,
+        temperature: 0.4,
+        max_tokens: 800,
+        response_format: { type: 'json_object' },
       });
 
       const respuesta = completion.choices[0]?.message?.content || '{}';
-      const match = respuesta.match(/\{[\s\S]*\}/);
-      const jsonStr = match ? match[0] : '{}';
-      const resultado = JSON.parse(jsonStr);
+      const resultado = JSON.parse(respuesta);
 
       if (resultado.esVacante && resultado.confianza > 60) {
-        console.log(`✅ VACANTE DETECTADA: ${resultado.puesto} en ${resultado.empresa}`);
+        console.log(`✅ VACANTE DETECTADA: ${resultado.puesto} - ${resultado.empresa}`);
 
-        // Guardar en Firebase
+        // 💾 Guardar en Firebase
         await this.guardarVacanteEnFirebase(resultado, contenido, timestamp);
 
-        // Incrementar contador
-        this.vacantesDetectadas++;
-
-        // Actualizar mensaje como vacante
-        this.enviarEvento('todos', 'mensaje', {
-          id: mensajeId,
-          timestamp,
+        // 📤 Enviar respuesta de Groq al frontend
+        this.enviarEvento('todos', 'groq_respuesta', {
+          id: `groq-${Date.now()}`,
+          timestamp: new Date(),
           autor: 'GROQ IA',
-          contenido: `🎯 VACANTE: ${resultado.puesto} - ${resultado.empresa}`,
-          procesado: true,
+          contenido: resultado.respuesta || '✅ Vacante procesada y guardada en Firebase',
           esVacante: true,
+          procesado: true,
+          vacante: resultado,
         });
 
-        // Enviar estadísticas actualizadas
-        this.enviarEstadisticas('todos');
+        this.vacantesDetectadas++;
+      } else {
+        console.log(`📝 Mensaje normal de ${autor}`);
       }
 
-      // Notificar que Groq terminó
-      this.enviarEvento('todos', 'estadisticas', {
-        mensajesTotales: this.mensajesProcesados,
-        vacantesDetectadas: this.vacantesDetectadas,
-        timestamp: new Date(),
-        groqProcesando: false,
-      });
-    } catch (error) {
-      console.error('❌ Error analizando con Groq:', error);
-      this.enviarEvento('todos', 'estadisticas', {
-        mensajesTotales: this.mensajesProcesados,
-        vacantesDetectadas: this.vacantesDetectadas,
-        timestamp: new Date(),
-        groqProcesando: false,
-      });
+      // Actualizar estadísticas
+      this.enviarEstadisticas('todos');
+    } catch (error: any) {
+      console.error('❌ Error en Groq:', error.message);
     }
   }
 
@@ -391,3 +444,6 @@ Si NO es una vacante, responde: {"esVacante": false}
     };
   }
 }
+
+// 🌪️ INSTANCIA GLOBAL ÚNICA - Compartida por todo el backend
+export const aspiradoraStreaming = new AspiradoraStreamingService();

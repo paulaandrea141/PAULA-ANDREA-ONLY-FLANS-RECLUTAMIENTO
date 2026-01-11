@@ -6,6 +6,7 @@ import makeWASocket, {
 import qrcode from 'qrcode-terminal';
 import { BotWhatsAppService } from './whatsapp-bot-service';
 import { colaMensajes } from '../services/cola-mensajes';
+import { aspiradoraStreaming } from '../services/aspiradora-streaming';
 
 /**
  * 🔥 WHATSAPP VINCULADO: Paula Specter - CEO CORP. TYRELL
@@ -52,6 +53,15 @@ export const inicializarBaileys = async () => {
       
       // Inicializar bot con publicador automático
       await BotWhatsAppService.inicializar(sock);
+      
+      // 🌪️ ACTIVAR ASPIRADORA 3000 - Monitoreo 24/7 del grupo jefecito
+      console.log('🌪️ Activando Aspiradora 3000...');
+      try {
+        await aspiradoraStreaming.iniciarMonitoreo(sock);
+        console.log('✅ ASPIRADORA 3000 ACTIVA - Monitoreando jefecito en tiempo real');
+      } catch (error) {
+        console.error('❌ Error iniciando Aspiradora 3000:', error);
+      }
     }
 
     if (connection === 'close') {
