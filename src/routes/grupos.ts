@@ -79,4 +79,38 @@ gruposRouter.post('/ultimos-30-mensajes', async (req: Request, res: Response) =>
   }
 });
 
+// ✅ Endpoint: Succionar grupo completo (alias de ultimos-30-mensajes)
+gruposRouter.post('/succionar', async (req: Request, res: Response) => {
+  try {
+    const { grupoId } = req.body;
+
+    if (!grupoId) {
+      return res.status(400).json({
+        success: false,
+        error: 'grupoId requerido',
+      });
+    }
+
+    const mensajes = MENSAJES_DEMO[grupoId] || [];
+    console.log(`🌪️ SUCCIONANDO ${mensajes.length} mensajes de ${grupoId}`);
+
+    res.json({
+      success: true,
+      data: {
+        totalMensajes: mensajes.length,
+        vacantesDetectadas: 2,
+        nuevas: 1,
+        actualizadas: 1,
+        mensajes,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error succionando grupo:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error succionando grupo',
+    });
+  }
+});
+
 export default gruposRouter;
