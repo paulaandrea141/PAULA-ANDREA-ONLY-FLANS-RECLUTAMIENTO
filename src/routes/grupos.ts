@@ -105,39 +105,41 @@ export async function inicializarBaileysAhora() {
 
     socket.ev.on('creds.update', saveCreds);
 
-    // 🌊 STREAMING 24/7: Escuchar TODOS los mensajes del grupo "freelance BYG"
+    // 🌊 STREAMING 24/7: Escuchar TODOS los mensajes (grupos + personales)
     socket.ev.on('messages.upsert', async (m: any) => {
       try {
         const msg = m.messages[0];
         if (!msg?.message) return;
 
         const jid = msg.key.remoteJid;
-        
-        // 🔍 Buscar el grupo "freelance BYG"
-        // Por ahora monitorear todos los grupos y filtrar por nombre
+        const texto = 
+          msg.message.conversation || 
+          msg.message.extendedTextMessage?.text ||
+          msg.message.imageMessage?.caption ||
+          '[Mensaje multimedia]';
+
+        if (!texto.trim()) return;
+
+        // Obtener nombre del grupo o número personal
+        let nombreChat = 'Desconocido';
+        let tipo = 'personal';
+
         if (socket.store?.chats) {
           const chat = socket.store.chats.get(jid);
-          const nombreGrupo = chat?.name || chat?.subject || '';
-          
-          // Si es el grupo freelance BYG, enviar al streaming
-          if (nombreGrupo.toLowerCase().includes('freelance') || nombreGrupo.toLowerCase().includes('byg')) {
-            const remitente = msg.pushName || 'Desconocido';
-            const texto = 
-              msg.message.conversation || 
-              msg.message.extendedTextMessage?.text ||
-              msg.message.imageMessage?.caption ||
-              '[Mensaje multimedia]';
-
-            console.log(`🌊 [${nombreGrupo}] ${remitente}: ${texto}`);
-            
-            // ✅ ENVIAR AL STREAMING SSE
-            broadcastMessage(
-              texto,
-              remitente,
-              'whatsapp'
-            );
-          }
+          nombreChat = chat?.name || chat?.subject || jid;
+          tipo = jid.endsWith('@g.us') ? 'grupo' : 'personal';
         }
+
+        const remitente = msg.pushName || 'Paula Specter';
+
+        console.log(`🌊 [${tipo.toUpperCase()}] ${nombreChat} - ${remitente}: ${texto}`);
+        
+        // ✅ ENVIAR AL STREAMING SSE (TODOS los mensajes)
+        broadcastMessage(
+          texto,
+          remitente,
+          'whatsapp'
+        );
       } catch (error) {
         console.error('❌ Error en streaming:', error);
       }
