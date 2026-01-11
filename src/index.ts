@@ -7,6 +7,7 @@ import cors from 'cors';
 import { vacantesRouter } from './routes/vacantes';
 import { groqChatRouter } from './routes/groq-chat';
 import streamRouter from './routes/stream';
+import { gruposRouter } from './routes/grupos';
 import {
   securityHeaders,
   secureLogging,
@@ -42,6 +43,7 @@ app.get('/health', (req, res) => {
 // Rutas
 app.use('/api/vacantes', vacantesRouter);
 app.use('/api/groq-chat', groqChatRouter);
+app.use('/api/grupos', gruposRouter);
 app.use('/api/stream', streamRouter); // 🔴 NUEVO: Streaming en tiempo real
 
 // Cargar Gemini de forma segura
