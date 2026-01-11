@@ -5,6 +5,8 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import { gruposRouter, inicializarBaileysAhora } from './routes/grupos';
+import { streamRouter } from './routes/stream';
+import { iaRouter } from './routes/ia';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +29,8 @@ app.get('/health', (req, res) => {
 
 // Rutas
 app.use('/api/grupos', gruposRouter);
+app.use('/api/stream', streamRouter);
+app.use('/api/ia', iaRouter);
 
 // 🔥 Iniciar servidor y Baileys
 app.listen(PORT, async () => {

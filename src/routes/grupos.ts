@@ -4,6 +4,9 @@ import { makeWASocket, useMultiFileAuthState, DisconnectReason } from '@whiskeys
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
+import { db } from '../lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { broadcastMessage } from './stream';
 
 export const gruposRouter = express.Router();
 
@@ -50,7 +53,6 @@ export async function inicializarBaileysAhora() {
       logger,
       syncFullHistory: false,
       retryRequestDelayMs: 100,
-      maxRetries: 5,
     });
 
     // MANEJO DE CONEXIÓN
@@ -103,6 +105,44 @@ export async function inicializarBaileysAhora() {
 
     socket.ev.on('creds.update', saveCreds);
 
+    // 🌊 STREAMING 24/7: Escuchar TODOS los mensajes del grupo "freelance BYG"
+    socket.ev.on('messages.upsert', async (m: any) => {
+      try {
+        const msg = m.messages[0];
+        if (!msg?.message) return;
+
+        const jid = msg.key.remoteJid;
+        
+        // 🔍 Buscar el grupo "freelance BYG"
+        // Por ahora monitorear todos los grupos y filtrar por nombre
+        if (socket.store?.chats) {
+          const chat = socket.store.chats.get(jid);
+          const nombreGrupo = chat?.name || chat?.subject || '';
+          
+          // Si es el grupo freelance BYG, enviar al streaming
+          if (nombreGrupo.toLowerCase().includes('freelance') || nombreGrupo.toLowerCase().includes('byg')) {
+            const remitente = msg.pushName || 'Desconocido';
+            const texto = 
+              msg.message.conversation || 
+              msg.message.extendedTextMessage?.text ||
+              msg.message.imageMessage?.caption ||
+              '[Mensaje multimedia]';
+
+            console.log(`🌊 [${nombreGrupo}] ${remitente}: ${texto}`);
+            
+            // ✅ ENVIAR AL STREAMING SSE
+            broadcastMessage(
+              texto,
+              remitente,
+              'whatsapp'
+            );
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error en streaming:', error);
+      }
+    });
+
     return socket;
   } catch (error) {
     console.error('❌ Error en Baileys:', error);
@@ -123,7 +163,7 @@ gruposRouter.get('/listar-grupos-paula', async (req: Request, res: Response) => 
         grupos: [
           { id: 'demo-1@g.us', nombre: '✅ JEFECITO PERSONAL', participantes: 2 },
           { id: 'demo-2@g.us', nombre: '✅ EQUIPO CORP. TYRELL', participantes: 8 },
-          { id: 'demo-3@g.us', nombre: '✅ NÓMINA Y FINANZAS', participantes: 5 },
+          { id: 'demo-3@g.us', nombre: '✅ FREELANCE BYG', participantes: 15 },
         ],
         total: 3,
         fuente: 'demo',
@@ -141,11 +181,14 @@ gruposRouter.get('/listar-grupos-paula', async (req: Request, res: Response) => 
       const allChats = socket.store.chats.all?.() || [];
       grupos = allChats
         .filter((chat: any) => chat.id?.endsWith('@g.us'))
-        .map((grupo: any) => ({
-          id: grupo.id,
-          nombre: grupo.name || grupo.subject || 'Sin nombre',
-          participantes: grupo.participants?.length || 0,
-        }));
+        .map((grupo: any) => {
+          console.log(`📋 Grupo encontrado: ${grupo.name || grupo.subject} (${grupo.id})`);
+          return {
+            id: grupo.id,
+            nombre: grupo.name || grupo.subject || 'Sin nombre',
+            participantes: grupo.participants?.length || 0,
+          };
+        });
     }
 
     // Forma 2: Si no hay chats, obtener via fetchAllGroupMetadata
